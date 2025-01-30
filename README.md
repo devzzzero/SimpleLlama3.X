@@ -120,7 +120,7 @@
   For example, I find it useful to horizontally paste the name of a Tensor,
   then its shape, followed by its actual elements.
 
-## view.py
+## `tinytorch/view.py`
   Utility to draw DOT diagrams of expression trees in both Value and Tensor
 
 # Credits! (I stood on the shoulders of giants!)
