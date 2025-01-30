@@ -62,7 +62,7 @@
 
  ## Install pytorch
    - You can get by with the CPU version of pytorch if you are having difficulties getting your GPU drivers to work
-   - (Pytorch) <https://pytorch.org/get-started/locally/?ref=blog.qualiteg.com>
+   - (Pytorch) <https://pytorch.org/get-started/locally/>
 
  ## Now add additional packages using pip
    - `$ pip install numpy simpy scipy matplotlib graphviz jupyter`
