@@ -127,4 +127,4 @@
   - Umar Jamil's [pytorch-llama](https://github.com/hkproj/pytorch-llama) 
   - Andrej Karpathy's  [micrograd](https://github.com/karpathy/micrograd)
   - [Meta Llama Official Repository](https://github.com/meta-llama/llama-models)
-  - [Official Meta Llama Model Download linkk](https://www.llama.com/llama-downloads/)
+  - [Official Meta Llama Model Download link](https://www.llama.com/llama-downloads/)
