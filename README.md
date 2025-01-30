@@ -5,6 +5,10 @@
   to help me learn the finer points of how LLMs actually work.
   As I learn and improve, I'll periodically update this repo with additional materials.
 
+## Take a look at <a href="./REQUIREMENTS.md">REQUIREMENTS.md</a>
+  - It contains the instructions on how to set things up for jupyter
+    (You can skip this if you already have `jupyter` in your PATH)
+
 ## Code Descriptions:
   - `subroutines.py` 
     - This is just a random collection of my own utility functions I found to be useful, including pretty printing of `torch.Tensor`

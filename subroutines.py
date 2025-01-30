@@ -7,12 +7,13 @@ import sys
 import os.path as path
 import platform
 import datetime as DT
-import json_repair as JSONR
+import json as JSONR
 from sortedcollections import *
 from tinytorch.tensorhelpers import *
 import dataclasses as DC
 from dataclasses import dataclass
 from typing import Literal, Tuple, List, Optional
+import numbers
 
 def findByName(name, LOCALS, GLOBALS):
   if isinstance(name, str):
@@ -52,6 +53,16 @@ def splitAndConvert(S, toType, sep=','):
 def splitByWhiteSpace(x):
   return list(filter(lambda x: len(x) > 0, map(lambda x: x.strip(), x.splitlines())))
 
+def convertToBool(S):
+  if isinstance(S, numbers.Number):
+    return bool(int(S))
+  elif isinstance(S, str):
+    if S.startswith("1") or S.casefold() == 'true':
+      return True
+    elif S.startswith("0") or S.casefold() == 'false':
+      return False
+  return False
+
 def buildCmdLineParserFrom(dct, argPrefix='--', scopeSep='.',listSep=','):
   FN = OrderedDict([[ f.name, f] for f in DC.fields(dct) ])
   Rtn = []
@@ -62,14 +73,14 @@ def buildCmdLineParserFrom(dct, argPrefix='--', scopeSep='.',listSep=','):
       converter = v.type
       Rtn.append((field, arg, converter))
     elif v.type == bool:
-      converter = lambda S: bool(int(S))
+      converter = convertToBool
       Rtn.append((field, arg, converter))
     elif v.type == List[int] or v.type == List[float] or v.type == List[str]:
       containedType = v.type.__args__[0]
       converter = lambda S: splitAndConvert(S, containedType, listSep)
       Rtn.append((field, arg, converter))
     elif DC.is_dataclass(v.type):
-      partial = buildCmdLineParserFrom(v.type)
+      partial = buildCmdLineParserFrom(v.type, argPrefix, scopeSep, listSep)
       for (subfield, subarg, converter) in partial:
         newField = f'{field}{scopeSep}{subfield}'
         arg = f'{argPrefix}{newField}'
@@ -114,6 +125,18 @@ def setDCField(Orig, fieldName, Value, scopeSep='.'):
       setattr(attrs[idx], field, value)
     return Orig
 
+# like dataclasses.replace(), but with ability to
+# replace fields in nested dataclasses,
+# i.e. foo.bar=7 is encoded as foo___bar=7
+# Uses ___ as separator, by default
+def DCReplace(orig, scopeSep='___', **kwargs):
+  if DC.is_dataclass(type(orig)):
+    repl = DC.replace(orig)
+    for k, v in kwargs.items():
+      setDCField(repl, k, v, scopeSep=scopeSep)
+    return repl
+  return orig
+
 def getDCChangedFields(orig, curr, scopeSep='.'):
   # SPC = " "*(depth+1)
   rtn = OrderedDict()
@@ -132,12 +155,12 @@ def getDCChangedFields(orig, curr, scopeSep='.'):
         rtn[fn] = (origVal, currVal)
   return rtn
 
-def overrideConfig(OrigConfig, KK, prompts, printer=None):
+def overrideConfig(OrigConfig, KK, prompts, printer=None, scopeSep='.'):
   for (theField, theArg, theConverter) in prompts:
     if hasattr(KK, theField):
       Value = theConverter(getattr(KK, theField))
-      OrigValue = getDCField(OrigConfig, theField)
-      OrigConfig = setDCField(OrigConfig, theField, Value)
+      OrigValue = getDCField(OrigConfig, theField, scopeSep)
+      OrigConfig = setDCField(OrigConfig, theField, Value, scopeSep)
       if printer and OrigValue != Value:
         printer(f'overriding {theField}={Value} (was {OrigValue})')
       assert getDCField(OrigConfig, theField) == Value
@@ -145,6 +168,7 @@ def overrideConfig(OrigConfig, KK, prompts, printer=None):
 
 def convertDictToDataclass(s):
   # used for converting dicts into nested classes
+  # i.e. recovering from DC.replace() which replaced a nested dataclass with a dict!
   FN = dict([[f.name, f] for f in DC.fields(type(s))])
   for k, v in FN.items():
     theAttr = getattr(s, k)
